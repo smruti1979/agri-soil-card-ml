@@ -1,0 +1,6 @@
+agri_records.db
+printable_soil_cards.pdf
+runtime_qrs/
+__pycache__/
+.venv/
+.env
