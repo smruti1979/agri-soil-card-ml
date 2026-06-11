@@ -31,7 +31,7 @@ def startup():
 @app.get("/", include_in_schema=False)
 async def homepage_shortcut():
     """Automatically redirects anyone hitting the bare URL straight to the admin portal."""
-    return RedirectResponse(url="/admin/register")
+    return RedirectResponse(url="/admin/register", status_code=303)
 
 @app.get("/admin/register", response_class=HTMLResponse)
 async def get_registration_page(db=Depends(get_db), user: str = Depends(auth.authenticate_admin)):
