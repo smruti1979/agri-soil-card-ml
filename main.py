@@ -28,6 +28,11 @@ def get_db():
 def startup():
     init_db()
 
+@app.get("/", include_in_schema=False)
+async def homepage_shortcut():
+    """Automatically redirects anyone hitting the bare URL straight to the admin portal."""
+    return RedirectResponse(url="/admin/register")
+
 @app.get("/admin/register", response_class=HTMLResponse)
 async def get_registration_page(db=Depends(get_db), user: str = Depends(auth.authenticate_admin)):
     all_farmers = db.query(LandRecord).all()
