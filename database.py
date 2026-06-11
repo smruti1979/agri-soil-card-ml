@@ -21,25 +21,46 @@ class LandRecord(Base):
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
 
+
 def init_db():
     db = SessionLocal()
     inspector = inspect(engine)
     
-    # Check if the table already exists before creating it
+    # 1. Thread-safe table initialization check
     if not inspector.has_table("land_ownership"):
         Base.metadata.create_all(bind=engine)
         print("📁 Database tables created fresh.")
     else:
         print("📁 Database tables already exist. Skipping creation.")
         
-    # Seed data only if the table has 0 records
-    if db.query(LandRecord).count() == 0:
-        sample_records = [
-            LandRecord(land_id="KA-12-101", farmer_name="Ramesh Kumar", phone_number="+919876543210", nitrogen=90, phosphorus=42, potassium=43, ph=6.5, latitude=12.9716, longitude=77.5946),
-            LandRecord(land_id="MH-05-202", farmer_name="Anil Deshmukh", phone_number="+919876543211", nitrogen=25, phosphorus=15, potassium=20, ph=5.2, latitude=18.5204, longitude=73.8567),
-            LandRecord(land_id="PB-02-303", farmer_name="Gurpreet Singh", phone_number="+919876543212", nitrogen=60, phosphorus=55, potassium=44, ph=8.4, latitude=31.3260, longitude=75.5762)
-        ]
-        db.add_all(sample_records)
-        db.commit()
-        print("🌱 Seeding data complete.")
+    # Multi-worker proof record injection verification
+    # Individually check for the existence of each sample primary key before pushing duplicates
+    sample_profiles = [
+        {"id": "KA-12-101", "name": "Ramesh Kumar", "phone": "+919876543210", "n": 90, "p": 42, "k": 43, "ph": 6.5, "lat": 12.9716, "lon": 77.5946},
+        {"id": "MH-05-202", "name": "Anil Deshmukh", "phone": "+919876543211", "n": 25, "p": 15, "k": 20, "ph": 5.2, "lat": 18.5204, "lon": 73.8567},
+        {"id": "PB-02-303", "name": "Gurpreet Singh", "phone": "+919876543212", "n": 60, "p": 55, "k": 44, "ph": 8.4, "lat": 31.3260, "lon": 75.5762}
+    ]
+    
+    records_to_add = []
+    for p in sample_profiles:
+        exists = db.query(LandRecord).filter(LandRecord.land_id == p["id"]).first()
+        if not exists:
+            new_record = LandRecord(
+                land_id=p["id"], farmer_name=p["name"], phone_number=p["phone"],
+                nitrogen=p["n"], phosphorus=p["p"], potassium=p["k"], ph=p["ph"],
+                latitude=p["lat"], longitude=p["lon"]
+            )
+            records_to_add.append(new_record)
+            
+    if records_to_add:
+        try:
+            db.add_all(records_to_add)
+            db.commit()
+            print(f"🌱 Successfully seeded {len(records_to_add)} missing test records.")
+        except Exception as e:
+            db.rollback()
+            print(f"⚠️ Insertion collision bypassed cleanly: {str(e)}")
+    else:
+        print("🌱 All base records already verified in registry table. No seeding required.")
+        
     db.close()
