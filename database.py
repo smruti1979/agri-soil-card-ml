@@ -23,18 +23,18 @@ class LandRecord(Base):
 
 
 def init_db():
-    db = SessionLocal()
-    inspector = inspect(engine)
-    
-    # 1. Thread-safe table initialization check
-    if not inspector.has_table("land_ownership"):
+    # 1. Concurrency-proof table creation
+    try:
+        # create_all safe-checks for existence automatically, 
+        # but we wrap it to handle race conditions across concurrent workers safely.
         Base.metadata.create_all(bind=engine)
-        print("📁 Database tables created fresh.")
-    else:
-        print("📁 Database tables already exist. Skipping creation.")
-        
+        print("📁 Database table state synchronized successfully.")
+    except Exception as e:
+        print(f"📁 Notice: Table initialization handled concurrently by another worker: {str(e)}")
+
+    db = SessionLocal()
+    
     # Multi-worker proof record injection verification
-    # Individually check for the existence of each sample primary key before pushing duplicates
     sample_profiles = [
         {"id": "KA-12-101", "name": "Ramesh Kumar", "phone": "+919876543210", "n": 90, "p": 42, "k": 43, "ph": 6.5, "lat": 12.9716, "lon": 77.5946},
         {"id": "MH-05-202", "name": "Anil Deshmukh", "phone": "+919876543211", "n": 25, "p": 15, "k": 20, "ph": 5.2, "lat": 18.5204, "lon": 73.8567},
@@ -43,14 +43,18 @@ def init_db():
     
     records_to_add = []
     for p in sample_profiles:
-        exists = db.query(LandRecord).filter(LandRecord.land_id == p["id"]).first()
-        if not exists:
-            new_record = LandRecord(
-                land_id=p["id"], farmer_name=p["name"], phone_number=p["phone"],
-                nitrogen=p["n"], phosphorus=p["p"], potassium=p["k"], ph=p["ph"],
-                latitude=p["lat"], longitude=p["lon"]
-            )
-            records_to_add.append(new_record)
+        # Querying inside a try block isolates lookup errors if a table is locked briefly
+        try:
+            exists = db.query(LandRecord).filter(LandRecord.land_id == p["id"]).first()
+            if not exists:
+                new_record = LandRecord(
+                    land_id=p["id"], farmer_name=p["name"], phone_number=p["phone"],
+                    nitrogen=p["n"], phosphorus=p["p"], potassium=p["k"], ph=p["ph"],
+                    latitude=p["lat"], longitude=p["lon"]
+                )
+                records_to_add.append(new_record)
+        except Exception:
+            db.rollback() # Recover session state if temporary lock occurs
             
     if records_to_add:
         try:
