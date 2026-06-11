@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import inspect
 
 DATABASE_URL = "sqlite:///./agri_records.db"
 
@@ -21,10 +22,17 @@ class LandRecord(Base):
     longitude = Column(Float, nullable=False)
 
 def init_db():
-    """Initializes the database and seeds it with regional profiles if empty."""
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+    inspector = inspect(engine)
     
+    # Check if the table already exists before creating it
+    if not inspector.has_table("land_ownership"):
+        Base.metadata.create_all(bind=engine)
+        print("📁 Database tables created fresh.")
+    else:
+        print("📁 Database tables already exist. Skipping creation.")
+        
+    # Seed data only if the table has 0 records
     if db.query(LandRecord).count() == 0:
         sample_records = [
             LandRecord(land_id="KA-12-101", farmer_name="Ramesh Kumar", phone_number="+919876543210", nitrogen=90, phosphorus=42, potassium=43, ph=6.5, latitude=12.9716, longitude=77.5946),
@@ -33,4 +41,5 @@ def init_db():
         ]
         db.add_all(sample_records)
         db.commit()
+        print("🌱 Seeding data complete.")
     db.close()
