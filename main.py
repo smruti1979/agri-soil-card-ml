@@ -17,7 +17,7 @@ app = FastAPI(title="Intelligent Agriculture Gateway")
 analytics = AgriAnalyticsEngine()
 
 # ⚠️ CHANGE THIS LINK BELOW EVERY TIME YOU RESTART LOCALTUNNEL!
-SERVER_ENDPOINT = "https://fifty-beans-dream.loca.lt/predict"
+SERVER_ENDPOINT = "https://smart-agri-p88g.onrender.com/predict"
 
 def get_db():
     db = SessionLocal()
