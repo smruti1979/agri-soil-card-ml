@@ -69,6 +69,7 @@ def render_admin_registration_form(username: str, registered_farmers: list) -> s
                 var selectBox = document.getElementById("farmerSelect");
                 var selectedId = selectBox.value;
                 
+                // Hide all cards initially
                 var allCards = document.getElementsByClassName("farmer-detail-card");
                 for (var i = 0; i < allCards.length; i++) {{
                     allCards[i].style.display = "none";
@@ -78,7 +79,10 @@ def render_admin_registration_form(username: str, registered_farmers: list) -> s
                 
                 if (selectedId) {{
                     placeholder.style.display = "none";
-                    document.getElementById("card-" + selectedId).style.display = "block";
+                    var targetCard = document.getElementById("card-" + selectedId);
+                    if (targetCard) {{
+                        targetCard.style.display = "block";
+                    }}
                 }} else {{
                     placeholder.style.display = "block";
                 }}
@@ -115,19 +119,17 @@ def render_admin_registration_form(username: str, registered_farmers: list) -> s
             </div>
             
             <div class="card">
-                <h3>📋 Registry Search & Card Delivery</h3>
+                <h3>🔍 Registry Search & Card Delivery</h3>
                 <div class="form-group">
                     <label>Select Profile Target</label>
                     <select id="farmerSelect" onchange="handleFarmerSelection()">
                         {dropdown_options}
                     </select>
                 </div>
-                
                 <div id="placeholderText" class="placeholder-text">
-                    🔍 Select a Farmer or Land ID from the drop-down search menu above to review laboratory records and download their custom soil card file.
+                    Choose a land registry entry from the menu above to review soil profiles and download individual physical data cards.
                 </div>
-                
-                {detail_cards_html.replace('id="card-', 'id="card--')}
+                {detail_cards_html}
             </div>
         </div>
     </body>
