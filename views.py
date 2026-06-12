@@ -78,7 +78,7 @@ def render_admin_registration_form(username: str, registered_farmers: list) -> s
                 
                 if (selectedId) {{
                     placeholder.style.display = "none";
-                    document.getElementById("card--" + selectedId).style.display = "block";
+                    document.getElementById("card-" + selectedId).style.display = "block";
                 }} else {{
                     placeholder.style.display = "block";
                 }}

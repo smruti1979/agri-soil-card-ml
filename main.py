@@ -61,7 +61,7 @@ async def dynamic_card_pdf_download(id: str = Query(...), db=Depends(get_db), us
     os.makedirs(temp_dir, exist_ok=True)
     qr_path = f"{temp_dir}/{farm.land_id}.png"
     
-    secure_url = f"{SERVER_ENDPOINT}?id={farm.land_id}"
+    secure_url = f"{SERVER_ENDPOINT}/predict?id={farm.land_id}"
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
     qr.add_data(secure_url)
     qr.make(fit=True)
@@ -107,7 +107,7 @@ async def dynamic_card_pdf_download(id: str = Query(...), db=Depends(get_db), us
     return FileResponse(path=pdf_filename, filename=pdf_filename, media_type='application/pdf')
 
 @app.get("/predict", response_class=HTMLResponse)
-async def process_qr_scan(id: str = Query(..., alias="id"), db=Depends(get_db), user: str = Depends(auth.authenticate_inspector)):
+async def process_qr_scan(id: str = Query(..., alias="id"), db=Depends(get_db)):
     farm = db.query(LandRecord).filter(LandRecord.land_id == id).first()
     if not farm: raise HTTPException(status_code=404, detail="Soil card record not found.")
 
@@ -115,5 +115,5 @@ async def process_qr_scan(id: str = Query(..., alias="id"), db=Depends(get_db), 
     crop, confidence = analytics.predict_crop(farm.nitrogen, farm.phosphorus, farm.potassium, farm.ph, humidity, temp, rainfall)
     expected_yield, fertilizer = analytics.calculate_optimization(crop, farm.nitrogen, farm.phosphorus, farm.potassium, rainfall)
 
-    html_layout = views.render_inspector_dashboard(user, farm, temp, humidity, rainfall, crop, confidence, expected_yield, fertilizer)
+    html_layout = views.render_inspector_dashboard("Guest Scanner", farm, temp, humidity, rainfall, crop, confidence, expected_yield, fertilizer)
     return HTMLResponse(content=html_layout)
